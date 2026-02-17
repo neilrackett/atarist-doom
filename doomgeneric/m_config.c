@@ -1901,8 +1901,15 @@ void M_LoadDefaults (void)
     }
     else
     {
-        doom_defaults.filename
-            = M_StringJoin(configdir, default_main_config, NULL);
+        if (!strcmp(configdir, ""))
+        {
+            doom_defaults.filename = strdup(default_main_config);
+        }
+        else
+        {
+            doom_defaults.filename
+                = M_StringJoin(configdir, DIR_SEPARATOR_S, default_main_config, NULL);
+        }
     }
 
     printf("saving config in %s\n", doom_defaults.filename);
@@ -1924,8 +1931,15 @@ void M_LoadDefaults (void)
     }
     else
     {
-        extra_defaults.filename
-            = M_StringJoin(configdir, default_extra_config, NULL);
+        if (!strcmp(configdir, ""))
+        {
+            extra_defaults.filename = strdup(default_extra_config);
+        }
+        else
+        {
+            extra_defaults.filename
+                = M_StringJoin(configdir, DIR_SEPARATOR_S, default_extra_config, NULL);
+        }
     }
 
     LoadDefaultCollection(&doom_defaults);
@@ -2042,9 +2056,10 @@ float M_GetFloatVariable(char *name)
 
 static char *GetDefaultConfigDir(void)
 {
-    char *result = (char *)malloc(2);
+    char *result = (char *)malloc(3);
     result[0] = '.';
-    result[1] = '\0';
+    result[1] = DIR_SEPARATOR;
+    result[2] = '\0';
 
     return result;
 }
@@ -2115,7 +2130,11 @@ char *M_GetSaveGameDir(char *iwadname)
 
         free(topdir);
 #else
+#if defined(__MINT__)
+        savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, "savegame/", NULL);
+#else
         savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, ".savegame/", NULL);
+#endif
 
         M_MakeDirectory(savegamedir);
 
@@ -2125,4 +2144,3 @@ char *M_GetSaveGameDir(char *iwadname)
 
     return savegamedir;
 }
-

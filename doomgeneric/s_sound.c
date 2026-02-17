@@ -102,8 +102,11 @@ static boolean mus_paused;
 static musicinfo_t *mus_playing = NULL;
 
 // Number of channels to use
-
+#ifdef ATARI_SND_CHANNELS
+int snd_channels = ATARI_SND_CHANNELS;
+#else
 int snd_channels = 8;
+#endif
 
 //
 // Initializes sound stuff, including volume
@@ -667,4 +670,3 @@ void S_StopMusic(void)
         mus_playing = NULL;
     }
 }
-

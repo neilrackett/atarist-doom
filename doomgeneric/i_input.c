@@ -20,6 +20,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <SDL.h>
 
 #include "config.h"
 #include "deh_str.h"
@@ -42,6 +43,7 @@
 #include "doomgeneric.h"
 
 int vanilla_keyboard_mapping = 1;
+static int mouse_button_state = 0;
 
 // Is the shift key currently down?
 
@@ -260,6 +262,49 @@ static unsigned char GetTypedChar(unsigned char key)
     return key;
 }
 
+static int AccelerateMouse(int value)
+{
+    int absval;
+    int accelerated;
+
+    if (!usemouse)
+    {
+        return 0;
+    }
+
+    absval = value < 0 ? -value : value;
+
+    if (absval <= mouse_threshold || mouse_acceleration <= 1.0f)
+    {
+        return value;
+    }
+
+    accelerated = mouse_threshold
+                + (int)((absval - mouse_threshold) * mouse_acceleration);
+
+    return value < 0 ? -accelerated : accelerated;
+}
+
+static int SDLButtonsToDoomButtons(Uint8 buttons)
+{
+    int result = 0;
+
+    if ((buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0)
+    {
+        result |= 1;
+    }
+    if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0)
+    {
+        result |= 2;
+    }
+    if ((buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0)
+    {
+        result |= 4;
+    }
+
+    return result;
+}
+
 static void UpdateShiftStatus(int pressed, unsigned char key)
 {
     int change;
@@ -323,6 +368,24 @@ void I_GetEvent(void)
         }
     }
 
+    if (usemouse)
+    {
+        int mouse_x;
+        int mouse_y;
+        int buttons;
+
+        buttons = SDLButtonsToDoomButtons(SDL_GetRelativeMouseState(&mouse_x, &mouse_y));
+
+        if (mouse_x != 0 || mouse_y != 0 || buttons != mouse_button_state)
+        {
+            event.type = ev_mouse;
+            event.data1 = buttons;
+            event.data2 = AccelerateMouse(mouse_x);
+            event.data3 = -AccelerateMouse(mouse_y);
+            D_PostEvent(&event);
+            mouse_button_state = buttons;
+        }
+    }
 
                 /*
             case SDL_MOUSEMOTION:
@@ -338,4 +401,3 @@ void I_GetEvent(void)
 void I_InitInput(void)
 {
 }
-

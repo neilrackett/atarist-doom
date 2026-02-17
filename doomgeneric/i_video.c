@@ -31,7 +31,9 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "d_event.h"
 #include "d_main.h"
 #include "i_video.h"
+#include "i_joystick.h"
 #include "i_system.h"
+#include "m_config.h"
 #include "z_zone.h"
 
 #include "tables.h"
@@ -74,7 +76,11 @@ struct FB_ScreenInfo
 
 static struct FB_ScreenInfo s_Fb;
 int fb_scaling = 1;
+#if defined(__MINT__)
+int usemouse = 1;
+#else
 int usemouse = 0;
+#endif
 
 
 #ifdef CMAP256
@@ -204,8 +210,11 @@ void cmap_to_fb(uint8_t *out, uint8_t *in, int in_pixels)
 
 void I_InitGraphics (void)
 {
-    int i, gfxmodeparm;
+    int i;
+#ifndef CMAP256
+    int gfxmodeparm;
     char *mode;
+#endif
 
 	memset(&s_Fb, 0, sizeof(struct FB_ScreenInfo));
 	s_Fb.xres = DOOMGENERIC_RESX;
@@ -264,25 +273,14 @@ void I_InitGraphics (void)
 
 #endif  // CMAP256
 
-    printf("I_InitGraphics: framebuffer: x_res: %d, y_res: %d, x_virtual: %d, y_virtual: %d, bpp: %d\n",
-            s_Fb.xres, s_Fb.yres, s_Fb.xres_virtual, s_Fb.yres_virtual, s_Fb.bits_per_pixel);
-
-    printf("I_InitGraphics: framebuffer: RGBA: %d%d%d%d, red_off: %d, green_off: %d, blue_off: %d, transp_off: %d\n",
-            s_Fb.red.length, s_Fb.green.length, s_Fb.blue.length, s_Fb.transp.length, s_Fb.red.offset, s_Fb.green.offset, s_Fb.blue.offset, s_Fb.transp.offset);
-
-    printf("I_InitGraphics: DOOM screen size: w x h: %d x %d\n", SCREENWIDTH, SCREENHEIGHT);
-
-
     i = M_CheckParmWithArgs("-scaling", 1);
     if (i > 0) {
         i = atoi(myargv[i + 1]);
         fb_scaling = i;
-        printf("I_InitGraphics: Scaling factor: %d\n", fb_scaling);
     } else {
         fb_scaling = s_Fb.xres / SCREENWIDTH;
         if (s_Fb.yres / SCREENHEIGHT < fb_scaling)
             fb_scaling = s_Fb.yres / SCREENHEIGHT;
-        printf("I_InitGraphics: Auto-scaling factor: %d\n", fb_scaling);
     }
 
 
@@ -308,6 +306,7 @@ void I_StartFrame (void)
 void I_StartTic (void)
 {
 	I_GetEvent();
+    I_UpdateJoystick();
 }
 
 void I_UpdateNoBlit (void)
@@ -321,14 +320,13 @@ void I_UpdateNoBlit (void)
 void I_FinishUpdate (void)
 {
     int y;
-    int x_offset, y_offset, x_offset_end;
+    int x_offset, x_offset_end;
     unsigned char *line_in, *line_out;
 
     /* Offsets in case FB is bigger than DOOM */
     /* 600 = s_Fb heigt, 200 screenheight */
     /* 600 = s_Fb heigt, 200 screenheight */
     /* 2048 =s_Fb width, 320 screenwidth */
-    y_offset     = (((s_Fb.yres - (SCREENHEIGHT * fb_scaling)) * s_Fb.bits_per_pixel/8)) / 2;
     x_offset     = (((s_Fb.xres - (SCREENWIDTH  * fb_scaling)) * s_Fb.bits_per_pixel/8)) / 2; // XXX: siglent FB hack: /4 instead of /2, since it seems to handle the resolution in a funny way
     //x_offset     = 0;
     x_offset_end = ((s_Fb.xres - (SCREENWIDTH  * fb_scaling)) * s_Fb.bits_per_pixel/8) - x_offset;
@@ -427,8 +425,6 @@ int I_GetPaletteIndex (int r, int g, int b)
     int i;
     col_t color;
 
-    printf("I_GetPaletteIndex\n");
-
     best = 0;
     best_diff = INT_MAX;
 
@@ -484,6 +480,9 @@ void I_EnableLoadingDisk(void)
 
 void I_BindVideoVariables (void)
 {
+    M_BindVariable("use_mouse", &usemouse);
+    M_BindVariable("mouse_acceleration", &mouse_acceleration);
+    M_BindVariable("mouse_threshold", &mouse_threshold);
 }
 
 void I_DisplayFPSDots (boolean dots_on)

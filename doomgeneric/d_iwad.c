@@ -70,6 +70,45 @@ static void AddIWADDir(char *dir)
     }
 }
 
+static void AddExecutableDir(void)
+{
+    char *sep;
+    char *path;
+    size_t len;
+
+    if (myargv == NULL || myargv[0] == NULL)
+    {
+        return;
+    }
+
+    sep = strrchr(myargv[0], '/');
+    if (sep == NULL)
+    {
+        sep = strrchr(myargv[0], '\\');
+    }
+
+    if (sep == NULL)
+    {
+        return;
+    }
+
+    len = (size_t)(sep - myargv[0]);
+    if (len == 0)
+    {
+        return;
+    }
+
+    path = malloc(len + 1);
+    if (path == NULL)
+    {
+        return;
+    }
+
+    memcpy(path, myargv[0], len);
+    path[len] = '\0';
+    AddIWADDir(path);
+}
+
 // This is Windows-specific code that automatically finds the location
 // of installed IWAD files.  The registry is inspected to find special
 // keys installed by the Windows installers for various CD versions
@@ -613,7 +652,9 @@ static void BuildIWADDirList(void)
 
 #endif
 #else
+    AddIWADDir(".");
     AddIWADDir (FILES_DIR);
+    AddExecutableDir();
 
     // Don't run this function again.
 
@@ -845,4 +886,3 @@ char *D_SuggestGameName(GameMission_t mission, GameMode_t mode)
 
     return "Unknown game?";
 }
-

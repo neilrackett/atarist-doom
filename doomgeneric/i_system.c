@@ -29,6 +29,9 @@
 #else
 #include <unistd.h>
 #endif
+#if defined(__MINT__)
+#include <mint/osbind.h>
+#endif
 
 #ifdef ORIGCODE
 #include "SDL.h"
@@ -55,8 +58,13 @@
 #include <CoreFoundation/CFUserNotification.h>
 #endif
 
+#if defined(__MINT__)
+#define DEFAULT_RAM 4 /* MiB */
+#define MIN_RAM     2 /* MiB */
+#else
 #define DEFAULT_RAM 6 /* MiB */
-#define MIN_RAM     6  /* MiB */
+#define MIN_RAM     6 /* MiB */
+#endif
 
 
 typedef struct atexit_listentry_s atexit_listentry_t;
@@ -575,4 +583,3 @@ boolean I_GetMemoryValue(unsigned int offset, void *value, int size)
 
     return false;
 }
-

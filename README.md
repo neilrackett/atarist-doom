@@ -1,67 +1,36 @@
-# doomgeneric
-The purpose of doomgeneric is to make porting Doom easier.
-Of course Doom is already portable but with doomgeneric it is possible with just a few functions.
+# DOOM for Atari ST, TT & Falcon
 
-To try it you will need a WAD file (game data). If you don't own the game, shareware version is freely available (doom1.wad).
+Ported by [Neil Rackett](https://x.com/neilrackett)
 
-# porting
-Create a file named doomgeneric_yourplatform.c and just implement these functions to suit your platform.
-* DG_Init
-* DG_DrawFrame
-* DG_SleepMs
-* DG_GetTicksMs
-* DG_GetKey
+<img width="320" height="200" alt="image" src="https://github.com/user-attachments/assets/82745b03-d139-4fbc-a829-4db99578a9e0" /> 
+<img width="320" height="200" alt="image" src="https://github.com/user-attachments/assets/d613814a-4ba7-4dde-946a-a4f457d341c4" />
 
-|Functions            |Description|
-|---------------------|-----------|
-|DG_Init              |Initialize your platfrom (create window, framebuffer, etc...).
-|DG_DrawFrame         |Frame is ready in DG_ScreenBuffer. Copy it to your platform's screen.
-|DG_SleepMs           |Sleep in milliseconds.
-|DG_GetTicksMs        |The ticks passed since launch in milliseconds.
-|DG_GetKey            |Provide keyboard events.
-|DG_SetWindowTitle    |Not required. This is for setting the window title as Doom sets this from WAD file.
+_Atari TT & Falcon_
 
-### main loop
-At start, call doomgeneric_Create().
+<img width="320" height="200" alt="image" src="https://github.com/user-attachments/assets/d92262b5-f98f-4a7d-89fb-5bae89ad24ee" /> 
+<img width="320" height="200" alt="image" src="https://github.com/user-attachments/assets/75389c0f-416c-4496-95b9-83fc137c19ce" />
 
-In a loop, call doomgeneric_Tick().
+_Atari ST_
 
-In simplest form:
-```
-int main(int argc, char **argv)
-{
-    doomgeneric_Create(argc, argv);
+Welcome to my experimental SDL DOOM port: it looks great on any Atari ST compatible computer, but is only really playable on a TT or Falcon (or with a fast CPU setting in [Hatari](https://www.hatari-emu.org/))
 
-    while (1)
-    {
-        doomgeneric_Tick();
-    }
-    
-    return 0;
-}
-```
+- Runs in greyscale on ST, 256 colours in TT & Falcon
+- Support keyboard, mouse and joystick controls
+- Automatically switches to 16Mhz with cache mode on Mega STE
+- Sound effects should work, but music is still WIP
 
-# sound
-Sound is much harder to implement! If you need sound, take a look at SDL port. It fully supports sound and music! Where to start? Define FEATURE_SOUND, assign DG_sound_module and DG_music_module.
+## Installing
 
-# platforms
-Ported platforms include Windows, X11, SDL, emscripten. Just look at (doomgeneric_win.c, doomgeneric_xlib.c, doomgeneric_sdl.c).
-Makefiles provided for each platform.
+- Build or [download](https://github.com/neilrackett/atarist-doom/releases) `DOOM.TOS` (any ST compatible) and/or `DOOM_030.TOS` (TT & Falcon only)
+- Copy the TOS files to your hard disk alongside `DOOM1.WAD`
+- Run `DOOM.TOS` or `DOOM_030.TOS`
 
-## emscripten
-You can try it directly here:
-https://ozkl.github.io/doomgeneric/
+## Building
 
-emscripten port is based on SDL port, so it supports sound and music! For music, timidity backend is used.
+- Install [atarist-toolkit-docker](https://github.com/sidecartridge/atarist-toolkit-docker)
+- Run `stcmd make`
+- `DOOM.TOS` and `DOOM_030.TOS` will be output to the `build` folder
 
-## Windows
-![Windows](screenshots/windows.png)
+## Credits
 
-## X11 - Ubuntu
-![Ubuntu](screenshots/ubuntu.png)
-
-## X11 - FreeBSD
-![FreeBSD](screenshots/freebsd.png)
-
-## SDL
-![SDL](screenshots/sdl.png)
+Big thank you to [doomgeneric](https://github.com/ozkl/doomgeneric)
