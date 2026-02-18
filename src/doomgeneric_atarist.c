@@ -3,6 +3,8 @@
 #include "doomkeys.h"
 #include "doomgeneric.h"
 #include "i_video.h"
+#include "m_menu.h"
+#include "r_main.h"
 
 #include <SDL.h>
 #include <ctype.h>
@@ -16,16 +18,16 @@
 #include <mint/cookie.h>
 #endif
 
-#ifndef ATARI_USE_SUPERVISOR
-#define ATARI_USE_SUPERVISOR 0
-#endif
-
 #ifndef ATARI_TARGET_FPS
 #define ATARI_TARGET_FPS 0
 #endif
 
 #ifndef ATARI_SHOW_FPS
 #define ATARI_SHOW_FPS 0
+#endif
+
+#ifndef ATARI_SCREENBLOCKS_ST
+#define ATARI_SCREENBLOCKS_ST 4
 #endif
 
 #define KEYQUEUE_SIZE 16
@@ -42,23 +44,23 @@ static char s_SdlVideoDriverEnv[48];
 
 #if ATARI_SHOW_FPS
 static const uint8_t s_FpsFontDigits[10][5] =
-{
-    { 0x7, 0x5, 0x5, 0x5, 0x7 }, /* 0 */
-    { 0x2, 0x6, 0x2, 0x2, 0x7 }, /* 1 */
-    { 0x7, 0x1, 0x7, 0x4, 0x7 }, /* 2 */
-    { 0x7, 0x1, 0x7, 0x1, 0x7 }, /* 3 */
-    { 0x5, 0x5, 0x7, 0x1, 0x1 }, /* 4 */
-    { 0x7, 0x4, 0x7, 0x1, 0x7 }, /* 5 */
-    { 0x7, 0x4, 0x7, 0x5, 0x7 }, /* 6 */
-    { 0x7, 0x1, 0x1, 0x1, 0x1 }, /* 7 */
-    { 0x7, 0x5, 0x7, 0x5, 0x7 }, /* 8 */
-    { 0x7, 0x5, 0x7, 0x1, 0x7 }  /* 9 */
+    {
+        {0x7, 0x5, 0x5, 0x5, 0x7}, /* 0 */
+        {0x2, 0x6, 0x2, 0x2, 0x7}, /* 1 */
+        {0x7, 0x1, 0x7, 0x4, 0x7}, /* 2 */
+        {0x7, 0x1, 0x7, 0x1, 0x7}, /* 3 */
+        {0x5, 0x5, 0x7, 0x1, 0x1}, /* 4 */
+        {0x7, 0x4, 0x7, 0x1, 0x7}, /* 5 */
+        {0x7, 0x4, 0x7, 0x5, 0x7}, /* 6 */
+        {0x7, 0x1, 0x1, 0x1, 0x1}, /* 7 */
+        {0x7, 0x5, 0x7, 0x5, 0x7}, /* 8 */
+        {0x7, 0x5, 0x7, 0x1, 0x7}  /* 9 */
 };
-static const uint8_t s_FpsFontF[5] = { 0x7, 0x4, 0x7, 0x4, 0x4 };
-static const uint8_t s_FpsFontP[5] = { 0x7, 0x5, 0x7, 0x4, 0x4 };
-static const uint8_t s_FpsFontS[5] = { 0x7, 0x4, 0x7, 0x1, 0x7 };
-static const uint8_t s_FpsFontColon[5] = { 0x0, 0x2, 0x0, 0x2, 0x0 };
-static const uint8_t s_FpsFontBlank[5] = { 0x0, 0x0, 0x0, 0x0, 0x0 };
+static const uint8_t s_FpsFontF[5] = {0x7, 0x4, 0x7, 0x4, 0x4};
+static const uint8_t s_FpsFontP[5] = {0x7, 0x5, 0x7, 0x4, 0x4};
+static const uint8_t s_FpsFontS[5] = {0x7, 0x4, 0x7, 0x1, 0x7};
+static const uint8_t s_FpsFontColon[5] = {0x0, 0x2, 0x0, 0x2, 0x0};
+static const uint8_t s_FpsFontBlank[5] = {0x0, 0x0, 0x0, 0x0, 0x0};
 
 static uint32_t s_FpsLastMs = 0;
 static int s_FpsFrames = 0;
@@ -115,8 +117,7 @@ static void atariDrawFpsText(SDL_Surface *target, int x, int y,
 
     for (row = 0; row < 5; ++row)
     {
-        rowDst = (uint8_t *)target->pixels
-               + (size_t)(y + row) * (size_t)target->pitch + (size_t)x;
+        rowDst = (uint8_t *)target->pixels + (size_t)(y + row) * (size_t)target->pitch + (size_t)x;
         memset(rowDst, bg, (size_t)textWidth);
     }
 
@@ -126,13 +127,14 @@ static void atariDrawFpsText(SDL_Surface *target, int x, int y,
         for (row = 0; row < 5; ++row)
         {
             uint8_t bits = glyph[row];
-            uint8_t *px = (uint8_t *)target->pixels
-                        + (size_t)(y + row) * (size_t)target->pitch
-                        + (size_t)x + (size_t)(i * 4);
+            uint8_t *px = (uint8_t *)target->pixels + (size_t)(y + row) * (size_t)target->pitch + (size_t)x + (size_t)(i * 4);
 
-            if (bits & 0x4) px[0] = fg;
-            if (bits & 0x2) px[1] = fg;
-            if (bits & 0x1) px[2] = fg;
+            if (bits & 0x4)
+                px[0] = fg;
+            if (bits & 0x2)
+                px[1] = fg;
+            if (bits & 0x1)
+                px[2] = fg;
         }
     }
 }
@@ -180,18 +182,40 @@ static void atariDrawFpsOverlay(SDL_Surface *target)
 #endif
 
 #if defined(__MINT__)
-#define MCH_MEGA_STE 0x00010010L
+#define MCH_CLASS_ST 0x0000U
+#define MCH_CLASS_STE 0x0001U
+#define MCH_MODEL_MASK 0x0000FFFFUL
+#define MCH_MEGA_STE_MODEL 0x0010UL
 
-static int is_megaste(void)
+static int is_st(void)
 {
     long mch = 0;
+    unsigned short mchClass;
 
     if (C_FOUND != Getcookie(C__MCH, &mch))
     {
         return 0;
     }
 
-    return mch == MCH_MEGA_STE;
+    mchClass = (unsigned short)(((unsigned long)mch >> 16) & 0xFFFFUL);
+    return mchClass == MCH_CLASS_ST || mchClass == MCH_CLASS_STE;
+}
+
+static int is_megaste(void)
+{
+    long mch = 0;
+
+    if (!is_st())
+    {
+        return 0;
+    }
+
+    if (C_FOUND != Getcookie(C__MCH, &mch))
+    {
+        return 0;
+    }
+
+    return (((unsigned long)mch) & MCH_MODEL_MASK) == MCH_MEGA_STE_MODEL;
 }
 
 static long megaste_enable_16mhz_cache_super(void)
@@ -207,31 +231,6 @@ static void AtariEnableMegaSTE16MHz(void)
         Supexec(megaste_enable_16mhz_cache_super);
     }
 }
-
-#if ATARI_USE_SUPERVISOR
-static int s_InSupervisorMode = 0;
-static long s_SupervisorStack = 0;
-
-__attribute__((noinline)) static void AtariEnterSupervisorMode(void)
-{
-    s_SupervisorStack = Super(0L);
-    s_InSupervisorMode = 1;
-}
-
-__attribute__((noinline)) static void AtariLeaveSupervisorMode(void)
-{
-    if (!s_InSupervisorMode)
-    {
-        return;
-    }
-
-    SuperToUser(s_SupervisorStack);
-    s_InSupervisorMode = 0;
-}
-#else
-static void AtariEnterSupervisorMode(void) {}
-static void AtariLeaveSupervisorMode(void) {}
-#endif
 #endif
 
 static unsigned char convertToDoomKey(unsigned int key)
@@ -378,10 +377,7 @@ static void AtariApplyPalette(void)
     }
 
     SDL_SetColors(s_FrameSurface, pal, 0, 256);
-    if (s_ScreenSurface != NULL
-        && s_ScreenSurface != s_FrameSurface
-        && s_ScreenSurface->format != NULL
-        && s_ScreenSurface->format->BitsPerPixel == 8)
+    if (s_ScreenSurface != NULL && s_ScreenSurface != s_FrameSurface && s_ScreenSurface->format != NULL && s_ScreenSurface->format->BitsPerPixel == 8)
     {
         SDL_SetColors(s_ScreenSurface, pal, 0, 256);
     }
@@ -401,10 +397,6 @@ static void DG_Shutdown(void)
     {
         SDL_Quit();
     }
-
-#if defined(__MINT__)
-    AtariLeaveSupervisorMode();
-#endif
 }
 
 void DG_Init(void)
@@ -412,6 +404,14 @@ void DG_Init(void)
     Uint32 flags;
     char driverName[32];
     const char *activeDriver;
+
+#if defined(__MINT__)
+    if (is_st())
+    {
+        screenblocks = ATARI_SCREENBLOCKS_ST;
+        R_SetViewSize(screenblocks, detailLevel);
+    }
+#endif
 
     atariSetVideoDriver("xbios");
 
@@ -525,7 +525,6 @@ int main(int argc, char **argv)
 
 #if defined(__MINT__)
     AtariEnableMegaSTE16MHz();
-    AtariEnterSupervisorMode();
 #endif
 
     doomgeneric_Create(argc, argv);

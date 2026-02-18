@@ -12,7 +12,6 @@ CC = m68k-atari-mint-gcc
 SDL_CONFIG ?= m68k-atari-mint-sdl-config
 SDL_PKG_CONFIG ?= m68k-atari-mint-pkg-config
 
-ATARI_USE_SUPERVISOR ?= 0
 ATARI_TARGET_FPS ?= 9
 ATARI_SHOW_FPS ?= 0
 ATARI_FALLBACK_AUDIO_RATE ?= 6258
@@ -35,9 +34,8 @@ SDL_LIBS := -lSDL -lgem -lldg -lgem
 endif
 endif
 
-CFLAGS += -O2 -fomit-frame-pointer -std=gnu99 -m68000 -Wall -D_DEFAULT_SOURCE
+CFLAGS += -fomit-frame-pointer -std=gnu99 -m68000 -Wall -D_DEFAULT_SOURCE
 CFLAGS += -DDOOMGENERIC_RESX=320 -DDOOMGENERIC_RESY=200
-CFLAGS += -DATARI_USE_SUPERVISOR=$(ATARI_USE_SUPERVISOR)
 CFLAGS += -DATARI_TARGET_FPS=$(ATARI_TARGET_FPS)
 CFLAGS += -DATARI_SHOW_FPS=$(ATARI_SHOW_FPS)
 CFLAGS += -DATARI_FALLBACK_AUDIO_RATE=$(ATARI_FALLBACK_AUDIO_RATE)
@@ -61,7 +59,7 @@ else
 HAVE_SDL_MIXER := 1
 endif
 
-SRCDIR = doomgeneric
+SRCDIR = src
 OBJDIR = obj
 BUILDDIR = build
 OUTPUT_DOOM = $(BUILDDIR)/DOOM.TOS
@@ -74,15 +72,15 @@ LIBS += -lSDL_mixer
 SRC_DOOM += i_sdlsound.o i_sdlmusic.o gusconf.o
 else
 SRC_DOOM += i_sdlfallbacksound.o
-$(warning SDL_mixer not found in atarist-toolkit; using SDL audio fallback for SFX only (music disabled))
+$(warning SDL_mixer not found, using SDL sfx fallback with music disabled)
 endif
 OBJDIR_DOOM = $(OBJDIR)/doom
 OBJDIR_030 = $(OBJDIR)/030
 OBJS_DOOM = $(addprefix $(OBJDIR_DOOM)/,$(SRC_DOOM))
 OBJS_030 = $(addprefix $(OBJDIR_030)/,$(SRC_DOOM))
 
-CFLAGS_DOOM = $(CFLAGS)
-CFLAGS_030 = $(filter-out -m68000,$(CFLAGS_DOOM)) -m68030
+CFLAGS_DOOM = -Os $(CFLAGS)
+CFLAGS_030 = -O3 $(filter-out -m68000,$(CFLAGS_DOOM)) -m68030
 LDFLAGS_030 = $(LDFLAGS) -m68030 -m68882
 
 .PHONY: all doom doom-030 clean print

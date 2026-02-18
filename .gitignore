@@ -1,15 +1,5 @@
-*.o
-*.obj
-*.exe
-*.DS_Store
+.DS_Store
 *.log
-*.user
 *~
-.vs/
-Debug/
-Release/
-Build/
-doomgeneric.map
 /build
 /obj
-.DS_Store
